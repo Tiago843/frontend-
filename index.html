@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Payment Splitter ARC</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .header {
+            background: white;
+            padding: 30px;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            text-align: center;
+        }
+
+        .header h1 {
+            color: #667eea;
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            color: #666;
+            font-size: 1.1em;
+        }
+
+        .wallet-section {
+            background: white;
+            padding: 25px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .wallet-info {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-size: 1.1em;
+        }
+
+        .status-dot {
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            background: #f44336;
+        }
+
+        .status-dot.connected {
+            background: #4caf50;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .btn-danger {
+            background: #f44336;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background: #da190b;
+        }
+
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .dashboard {
+            background: white;
+            padding: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .section-title {
+            font-size: 1.5em;
+            color: #333;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .balances {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .balance-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            border-radius: 15px;
+            color: white;
+        }
+
+        .balance-label {
+            font-size: 0.9em;
+            opacity: 0.9;
+            margin-bottom: 5px;
+        }
+
+        .balance-value {
+            font-size: 2em;
+            font-weight: 700;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+        }
+
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            border-left: 4px solid #667eea;
+        }
+
+        .stat-label {
+            font-size: 0.9em;
+            color: #666;
+            margin-bottom: 5px;
+        }
+
+        .stat-value {
+            font-size: 1.5em;
+            font-weight: 700;
+            color: #333;
+        }
+
+        .action-section {
+            background: white;
+            padding: 30px;
+        }
+
+        .action-section:last-child {
+            border-radius: 0 0 20px 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+
+        .form-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        .radio-group {
+            display: flex;
+            gap: 20px;
+        }
+
+        .radio-option {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .radio-option input[type="radio"] {
+            width: 20px;
+            height: 20px;
+            cursor: pointer;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+
+        .alert {
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .alert.show {
+            display: block;
+        }
+
+        .alert-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+
+        .alert-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 30px;
+            padding: 20px;
+        }
+
+        .footer a {
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .wallet-info {
+                flex-direction: column;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <div class="header">
+            <h1>💰 Payment Splitter ARC</h1>
+            <p>Sistema de divisão de pagamentos descentralizado</p>
+        </div>
+
+        <!-- Wallet Section -->
+        <div class="wallet-section">
+            <div class="wallet-info">
+                <div class="status">
+                    <span class="status-dot" id="statusDot"></span>
+                    <span id="statusText">Desconectado</span>
+                </div>
+                <button class="btn btn-primary" id="connectBtn" onclick="connectWallet()">
+                    🦊 Conectar MetaMask
+                </button>
+            </div>
+            <div id="walletAddress" style="margin-top: 15px; color: #666; font-size: 0.9em;"></div>
+        </div>
+
+        <!-- Alerts -->
+        <div id="alertContainer"></div>
+
+        <!-- Dashboard -->
+        <div class="dashboard">
+            <h2 class="section-title">📊 Dashboard</h2>
+            
+            <div class="balances">
+                <div class="balance-card">
+                    <div class="balance-label">Seu Saldo ARC</div>
+                    <div class="balance-value" id="balanceARC">0.0000</div>
+                </div>
+                <div class="balance-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
+                    <div class="balance-label">Seu Saldo USDC</div>
+                    <div class="balance-value" id="balanceUSDC">0.00</div>
+                </div>
+            </div>
+
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-label">Beneficiários</div>
+                    <div class="stat-value" id="numBeneficiaries">-</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total ARC</div>
+                    <div class="stat-value" id="totalARC">0</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-label">Total USDC</div>
+                    <div class="stat-value" id="totalUSDC">0</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Deposit Section -->
+        <div class="action-section">
+            <h2 class="section-title">💸 Depositar</h2>
+            
+            <div class="form-group">
+                <label class="form-label">Tipo de Moeda</label>
+                <div class="radio-group">
+                    <label class="radio-option">
+                        <input type="radio" name="depositType" value="native" checked>
+                        <span>ARC (Nativo)</span>
+                    </label>
+                    <label class="radio-option">
+                        <input type="radio" name="depositType" value="usdc">
+                        <span>USDC</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label">Valor</label>
+                <input type="number" class="form-input" id="depositAmount" placeholder="0.00" step="0.01" min="0">
+            </div>
+
+            <button class="btn btn-success" id="depositBtn" onclick="deposit()" disabled>
+                Depositar
+            </button>
+        </div>
+
+        <!-- Withdraw Section -->
+        <div class="action-section">
+            <h2 class="section-title">💳 Sacar</h2>
+            
+            <div class="button-group">
+                <button class="btn btn-success" onclick="withdrawNative()" id="withdrawArcBtn" disabled>
+                    Sacar ARC
+                </button>
+                <button class="btn btn-success" onclick="withdrawToken()" id="withdrawUsdcBtn" disabled>
+                    Sacar USDC
+                </button>
+                <button class="btn btn-primary" onclick="withdrawAll()" id="withdrawAllBtn" disabled>
+                    Sacar Tudo
+                </button>
+            </div>
+        </div>
+
+        <!-- Loading -->
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p style="margin-top: 15px; color: white;">Processando...</p>
+        </div>
+    </div>
+
+    <div class="footer">
+        <p>Desenvolvido com ❤️ para blockchain ARC</p>
+        <p><a href="https://testnet.arcscan.app/address/0xC5A53cA3a46D1f07eD4641D9cB78d6a7F6f79ed8" target="_blank">Ver Contrato no Explorer</a></p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
+    <script>
+        // Configurações
+        const CONFIG = {
+            chainId: 5042002,
+            chainName: 'ARC Testnet',
+            rpcUrl: 'https://rpc.testnet.arc.network',
+            explorerUrl: 'https://testnet.arcscan.app',
+            nativeCurrency: {
+                name: 'ARC',
+                symbol: 'ARC',
+                decimals: 18
+            },
+            contractAddress: '0xC5A53cA3a46D1f07eD4641D9cB78d6a7F6f79ed8',
+            usdcAddress: '0x3910B7cbb3341f1F4bF4cEB66e4A2C8f204FE2b8'
+        };
+
+        const CONTRACT_ABI = [
+            "function beneficiarios(uint256) view returns (address)",
+            "function valorSacado(address,address) view returns (uint256)",
+            "function totalDepositado(address) view returns (uint256)",
+            "function dono() view returns (address)",
+            "function depositarNativo() payable",
+            "function depositarToken(address,uint256)",
+            "function sacarNativo()",
+            "function sacarToken(address)",
+            "function sacarMultiplosTokens(address[])",
+            "function calcularSaldoDisponivelPara(address,address) view returns (uint256)",
+            "function saldoContratoToken(address) view returns (uint256)",
+            "function totalSacadoToken(address) view returns (uint256)",
+            "function ehBeneficiario(address) view returns (bool)",
+            "function listarBeneficiarios() view returns (address[])",
+            "function numeroBeneficiarios() view returns (uint256)"
+        ];
+
+        const ERC20_ABI = [
+            "function approve(address,uint256) returns (bool)",
+            "function allowance(address,address) view returns (uint256)",
+            "function balanceOf(address) view returns (uint256)"
+        ];
+
+        let provider, signer, contract, usdcContract, userAddress;
+
+        async function connectWallet() {
+            try {
+                if (typeof window.ethereum === 'undefined') {
+                    showAlert('MetaMask não encontrada! Por favor, instale a MetaMask.', 'error');
+                    return;
+                }
+
+                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                userAddress = accounts[0];
+
+                provider = new ethers.providers.Web3Provider(window.ethereum);
+                signer = provider.getSigner();
+
+                const network = await provider.getNetwork();
+                if (network.chainId !== CONFIG.chainId) {
+                    await switchNetwork();
+                }
+
+                contract = new ethers.Contract(CONFIG.contractAddress, CONTRACT_ABI, signer);
+                usdcContract = new ethers.Contract(CONFIG.usdcAddress, ERC20_ABI, signer);
+
+                updateUI();
+                loadDashboard();
+                
+                document.getElementById('statusDot').classList.add('connected');
+                document.getElementById('statusText').textContent = 'Conectado';
+                document.getElementById('walletAddress').textContent = `Carteira: ${userAddress}`;
+                document.getElementById('connectBtn').textContent = '✅ Conectado';
+                document.getElementById('connectBtn').disabled = true;
+
+                enableButtons();
+                
+                showAlert('Carteira conectada com sucesso!', 'success');
+            } catch (error) {
+                console.error(error);
+                showAlert('Erro ao conectar: ' + error.message, 'error');
+            }
+        }
+
+        async function switchNetwork() {
+            try {
+                await window.ethereum.request({
+                    method: 'wallet_switchEthereumChain',
+                    params: [{ chainId: '0x' + CONFIG.chainId.toString(16) }]
+                });
+            } catch (error) {
+                if (error.code === 4902) {
+                    await window.ethereum.request({
+                        method: 'wallet_addEthereumChain',
+                        params: [{
+                            chainId: '0x' + CONFIG.chainId.toString(16),
+                            chainName: CONFIG.chainName,
+                            nativeCurrency: CONFIG.nativeCurrency,
+                            rpcUrls: [CONFIG.rpcUrl],
+                            blockExplorerUrls: [CONFIG.explorerUrl]
+                        }]
+                    });
+                }
+            }
+        }
+
+        async function loadDashboard() {
+            try {
+                const isBeneficiary = await contract.ehBeneficiario(userAddress);
+                
+                if (isBeneficiary) {
+                    const balanceARC = await contract.calcularSaldoDisponivelPara(ethers.constants.AddressZero, userAddress);
+                    const balanceUSDC = await contract.calcularSaldoDisponivelPara(CONFIG.usdcAddress, userAddress);
+                    
+                    document.getElementById('balanceARC').textContent = ethers.utils.formatEther(balanceARC);
+                    document.getElementById('balanceUSDC').textContent = (balanceUSDC / 1000000).toFixed(2);
+                }
+
+                const numBenef = await contract.numeroBeneficiarios();
+                document.getElementById('numBeneficiaries').textContent = numBenef.toString();
+
+                const totalARC = await contract.saldoContratoToken(ethers.constants.AddressZero);
+                const totalUSDC = await contract.saldoContratoToken(CONFIG.usdcAddress);
+                
+                document.getElementById('totalARC').textContent = parseFloat(ethers.utils.formatEther(totalARC)).toFixed(4);
+                document.getElementById('totalUSDC').textContent = (totalUSDC / 1000000).toFixed(2);
+
+            } catch (error) {
+                console.error('Erro ao carregar dashboard:', error);
+            }
+        }
+
+        async function deposit() {
+            const type = document.querySelector('input[name="depositType"]:checked').value;
+            const amount = document.getElementById('depositAmount').value;
+
+            if (!amount || parseFloat(amount) <= 0) {
+                showAlert('Digite um valor válido!', 'error');
+                return;
+            }
+
+            showLoading(true);
+
+            try {
+                if (type === 'native') {
+                    const tx = await contract.depositarNativo({
+                        value: ethers.utils.parseEther(amount)
+                    });
+                    await tx.wait();
+                    showAlert('Depósito de ARC realizado com sucesso!', 'success');
+                } else {
+                    const amountUSDC = Math.floor(parseFloat(amount) * 1000000);
+                    
+                    const allowance = await usdcContract.allowance(userAddress, CONFIG.contractAddress);
+                    if (allowance.lt(amountUSDC)) {
+                        showAlert('Aprovando USDC...', 'info');
+                        const approveTx = await usdcContract.approve(CONFIG.contractAddress, ethers.constants.MaxUint256);
+                        await approveTx.wait();
+                    }
+
+                    const tx = await contract.depositarToken(CONFIG.usdcAddress, amountUSDC);
+                    await tx.wait();
+                    showAlert('Depósito de USDC realizado com sucesso!', 'success');
+                }
+
+                document.getElementById('depositAmount').value = '';
+                loadDashboard();
+            } catch (error) {
+                console.error(error);
+                showAlert('Erro ao depositar: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function withdrawNative() {
+            showLoading(true);
+            try {
+                const tx = await contract.sacarNativo();
+                await tx.wait();
+                showAlert('Saque de ARC realizado com sucesso!', 'success');
+                loadDashboard();
+            } catch (error) {
+                console.error(error);
+                showAlert('Erro ao sacar: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function withdrawToken() {
+            showLoading(true);
+            try {
+                const tx = await contract.sacarToken(CONFIG.usdcAddress);
+                await tx.wait();
+                showAlert('Saque de USDC realizado com sucesso!', 'success');
+                loadDashboard();
+            } catch (error) {
+                console.error(error);
+                showAlert('Erro ao sacar: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function withdrawAll() {
+            showLoading(true);
+            try {
+                const tokens = [ethers.constants.AddressZero, CONFIG.usdcAddress];
+                const tx = await contract.sacarMultiplosTokens(tokens);
+                await tx.wait();
+                showAlert('Saque de todos os tokens realizado com sucesso!', 'success');
+                loadDashboard();
+            } catch (error) {
+                console.error(error);
+                showAlert('Erro ao sacar: ' + error.message, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function enableButtons() {
+            document.getElementById('depositBtn').disabled = false;
+            document.getElementById('withdrawArcBtn').disabled = false;
+            document.getElementById('withdrawUsdcBtn').disabled = false;
+            document.getElementById('withdrawAllBtn').disabled = false;
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.classList.remove('show');
+            }, 5000);
+        }
+
+        function showLoading(show) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        function updateUI() {
+            // Atualiza UI quando necessário
+        }
+
+        window.ethereum?.on('accountsChanged', (accounts) => {
+            if (accounts.length === 0) {
+                location.reload();
+            } else {
+                userAddress = accounts[0];
+                loadDashboard();
+            }
+        });
+
+        window.ethereum?.on('chainChanged', () => {
+            location.reload();
+        });
+    </script>
+</body>
+</html>
