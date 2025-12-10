@@ -598,7 +598,7 @@
                         await approveTx.wait();
                     }
 
-                    const tx = await contract.depositarToken(CONFIG.usdcAddress, amountUSDC);
+                    const tx = await contract.depositarToken(CONFIG.usdcAddress, amountUSDC, { value: 0});
                     await tx.wait();
                     showAlert('Depósito de USDC realizado com sucesso!', 'success');
                 }
