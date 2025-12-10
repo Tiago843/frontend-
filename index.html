@@ -104,15 +104,6 @@
             transform: translateY(-2px);
         }
 
-        .btn-danger {
-            background: #f44336;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background: #da190b;
-        }
-
         .btn:disabled {
             opacity: 0.5;
             cursor: not-allowed;
@@ -135,27 +126,36 @@
 
         .balances {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            grid-template-columns: 1fr;
             gap: 20px;
             margin-bottom: 30px;
+            max-width: 400px;
+            margin-left: auto;
+            margin-right: auto;
         }
 
         .balance-card {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 20px;
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);
+            padding: 30px;
             border-radius: 15px;
             color: white;
+            text-align: center;
         }
 
         .balance-label {
-            font-size: 0.9em;
+            font-size: 1.1em;
             opacity: 0.9;
-            margin-bottom: 5px;
+            margin-bottom: 10px;
         }
 
         .balance-value {
-            font-size: 2em;
+            font-size: 3em;
             font-weight: 700;
+        }
+
+        .balance-symbol {
+            font-size: 0.5em;
+            opacity: 0.9;
         }
 
         .stats {
@@ -166,19 +166,20 @@
 
         .stat-card {
             background: #f8f9fa;
-            padding: 15px;
+            padding: 20px;
             border-radius: 10px;
-            border-left: 4px solid #667eea;
+            border-left: 4px solid #11998e;
+            text-align: center;
         }
 
         .stat-label {
             font-size: 0.9em;
             color: #666;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
         }
 
         .stat-value {
-            font-size: 1.5em;
+            font-size: 1.8em;
             font-weight: 700;
             color: #333;
         }
@@ -205,46 +206,29 @@
 
         .form-input {
             width: 100%;
-            padding: 12px;
+            padding: 15px;
             border: 2px solid #e0e0e0;
             border-radius: 10px;
-            font-size: 1em;
+            font-size: 1.2em;
             transition: border-color 0.3s;
         }
 
         .form-input:focus {
             outline: none;
-            border-color: #667eea;
-        }
-
-        .radio-group {
-            display: flex;
-            gap: 20px;
-        }
-
-        .radio-option {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            cursor: pointer;
-        }
-
-        .radio-option input[type="radio"] {
-            width: 20px;
-            height: 20px;
-            cursor: pointer;
+            border-color: #11998e;
         }
 
         .button-group {
             display: flex;
             gap: 15px;
             flex-wrap: wrap;
+            justify-content: center;
         }
 
         .alert {
             padding: 15px;
             border-radius: 10px;
-            margin-bottom: 20px;
+            margin: 20px;
             display: none;
         }
 
@@ -282,7 +266,7 @@
 
         .spinner {
             border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
+            border-top: 4px solid #11998e;
             border-radius: 50%;
             width: 40px;
             height: 40px;
@@ -308,6 +292,15 @@
             font-weight: 600;
         }
 
+        .currency-badge {
+            display: inline-block;
+            background: rgba(255,255,255,0.2);
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.9em;
+            margin-top: 10px;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 1.8em;
@@ -324,18 +317,20 @@
             .btn {
                 width: 100%;
             }
+
+            .balance-value {
+                font-size: 2.5em;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <!-- Header -->
         <div class="header">
             <h1>💰 Payment Splitter ARC</h1>
-            <p>Sistema de divisão de pagamentos descentralizado</p>
+            <p>Sistema de divisão de pagamentos em USDC</p>
         </div>
 
-        <!-- Wallet Section -->
         <div class="wallet-section">
             <div class="wallet-info">
                 <div class="status">
@@ -349,100 +344,81 @@
             <div id="walletAddress" style="margin-top: 15px; color: #666; font-size: 0.9em;"></div>
         </div>
 
-        <!-- Alerts -->
         <div id="alertContainer"></div>
 
-        <!-- Dashboard -->
         <div class="dashboard">
             <h2 class="section-title">📊 Dashboard</h2>
             
             <div class="balances">
                 <div class="balance-card">
-                    <div class="balance-label">Seu Saldo ARC</div>
-                    <div class="balance-value" id="balanceARC">0.0000</div>
-                </div>
-                <div class="balance-card" style="background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%);">
-                    <div class="balance-label">Seu Saldo USDC</div>
-                    <div class="balance-value" id="balanceUSDC">0.00</div>
+                    <div class="balance-label">💵 Seu Saldo Disponível</div>
+                    <div class="balance-value">
+                        <span id="balanceUSDC">0.00</span>
+                        <span class="balance-symbol">USDC</span>
+                    </div>
+                    <div class="currency-badge">Ativo Nativo da ARC</div>
                 </div>
             </div>
 
             <div class="stats">
                 <div class="stat-card">
-                    <div class="stat-label">Beneficiários</div>
+                    <div class="stat-label">👥 Beneficiários</div>
                     <div class="stat-value" id="numBeneficiaries">-</div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Total ARC</div>
-                    <div class="stat-value" id="totalARC">0</div>
+                    <div class="stat-label">💰 Total no Contrato</div>
+                    <div class="stat-value">
+                        <span id="totalUSDC">0</span>
+                        <small style="font-size: 0.5em; font-weight: normal;"> USDC</small>
+                    </div>
                 </div>
                 <div class="stat-card">
-                    <div class="stat-label">Total USDC</div>
-                    <div class="stat-value" id="totalUSDC">0</div>
+                    <div class="stat-label">📊 Você é Beneficiário</div>
+                    <div class="stat-value" id="isBeneficiary">-</div>
                 </div>
             </div>
         </div>
 
-        <!-- Deposit Section -->
         <div class="action-section">
-            <h2 class="section-title">💸 Depositar</h2>
+            <h2 class="section-title">💸 Depositar USDC</h2>
             
             <div class="form-group">
-                <label class="form-label">Tipo de Moeda</label>
-                <div class="radio-group">
-                    <label class="radio-option">
-                        <input type="radio" name="depositType" value="native" checked>
-                        <span>ARC (Nativo)</span>
-                    </label>
-                    <label class="radio-option">
-                        <input type="radio" name="depositType" value="usdc">
-                        <span>USDC</span>
-                    </label>
-                </div>
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Valor</label>
+                <label class="form-label">Valor em USDC</label>
                 <input type="number" class="form-input" id="depositAmount" placeholder="0.00" step="0.01" min="0">
+                <small style="color: #666; margin-top: 5px; display: block;">Exemplo: 10.50 para depositar 10.50 USDC</small>
             </div>
 
-            <button class="btn btn-success" id="depositBtn" onclick="deposit()" disabled>
-                Depositar
+            <button class="btn btn-success" id="depositBtn" onclick="deposit()" disabled style="width: 100%;">
+                💵 Depositar USDC
             </button>
         </div>
 
-        <!-- Withdraw Section -->
         <div class="action-section">
             <h2 class="section-title">💳 Sacar</h2>
+            <p style="color: #666; margin-bottom: 20px; text-align: center;">
+                Disponível apenas para beneficiários cadastrados
+            </p>
             
             <div class="button-group">
-                <button class="btn btn-success" onclick="withdrawNative()" id="withdrawArcBtn" disabled>
-                    Sacar ARC
-                </button>
-                <button class="btn btn-success" onclick="withdrawToken()" id="withdrawUsdcBtn" disabled>
-                    Sacar USDC
-                </button>
-                <button class="btn btn-primary" onclick="withdrawAll()" id="withdrawAllBtn" disabled>
-                    Sacar Tudo
+                <button class="btn btn-success" onclick="withdrawToken()" id="withdrawUsdcBtn" disabled style="font-size: 1.1em; padding: 15px 40px;">
+                    💰 Sacar Meu USDC
                 </button>
             </div>
         </div>
 
-        <!-- Loading -->
         <div class="loading" id="loading">
             <div class="spinner"></div>
-            <p style="margin-top: 15px; color: white;">Processando...</p>
+            <p style="margin-top: 15px; color: white;">Processando transação...</p>
         </div>
     </div>
 
     <div class="footer">
-        <p>Desenvolvido com ❤️ para blockchain ARC</p>
+        <p>Desenvolvido com ❤️ para blockchain ARC (Circle)</p>
         <p><a href="https://testnet.arcscan.app/address/0xC5A53cA3a46D1f07eD4641D9cB78d6a7F6f79ed8" target="_blank">Ver Contrato no Explorer</a></p>
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
-        // Configurações
         const CONFIG = {
             chainId: 5042002,
             chainName: 'ARC Testnet',
@@ -486,7 +462,7 @@
         async function connectWallet() {
             try {
                 if (typeof window.ethereum === 'undefined') {
-                    showAlert('MetaMask não encontrada! Por favor, instale a MetaMask.', 'error');
+                    showAlert('MetaMask não encontrada! Por favor, instale a extensão MetaMask no seu navegador.', 'error');
                     return;
                 }
 
@@ -504,7 +480,6 @@
                 contract = new ethers.Contract(CONFIG.contractAddress, CONTRACT_ABI, signer);
                 usdcContract = new ethers.Contract(CONFIG.usdcAddress, ERC20_ABI, signer);
 
-                updateUI();
                 loadDashboard();
                 
                 document.getElementById('statusDot').classList.add('connected');
@@ -515,7 +490,7 @@
 
                 enableButtons();
                 
-                showAlert('Carteira conectada com sucesso!', 'success');
+                showAlert('Carteira conectada com sucesso! Bem-vindo ao Payment Splitter ARC.', 'success');
             } catch (error) {
                 console.error(error);
                 showAlert('Erro ao conectar: ' + error.message, 'error');
@@ -548,81 +523,64 @@
             try {
                 const isBeneficiary = await contract.ehBeneficiario(userAddress);
                 
+                document.getElementById('isBeneficiary').textContent = isBeneficiary ? '✅ Sim' : '❌ Não';
+                
                 if (isBeneficiary) {
-                    const balanceARC = await contract.calcularSaldoDisponivelPara(ethers.constants.AddressZero, userAddress);
                     const balanceUSDC = await contract.calcularSaldoDisponivelPara(CONFIG.usdcAddress, userAddress);
-                    
-                    document.getElementById('balanceARC').textContent = ethers.utils.formatEther(balanceARC);
                     document.getElementById('balanceUSDC').textContent = (balanceUSDC / 1000000).toFixed(2);
+                } else {
+                    document.getElementById('balanceUSDC').textContent = '0.00';
                 }
 
                 const numBenef = await contract.numeroBeneficiarios();
                 document.getElementById('numBeneficiaries').textContent = numBenef.toString();
 
-                const totalARC = await contract.saldoContratoToken(ethers.constants.AddressZero);
                 const totalUSDC = await contract.saldoContratoToken(CONFIG.usdcAddress);
-                
-                document.getElementById('totalARC').textContent = parseFloat(ethers.utils.formatEther(totalARC)).toFixed(4);
                 document.getElementById('totalUSDC').textContent = (totalUSDC / 1000000).toFixed(2);
 
             } catch (error) {
                 console.error('Erro ao carregar dashboard:', error);
+                showAlert('Erro ao carregar informações do contrato.', 'error');
             }
         }
 
         async function deposit() {
-            const type = document.querySelector('input[name="depositType"]:checked').value;
             const amount = document.getElementById('depositAmount').value;
 
             if (!amount || parseFloat(amount) <= 0) {
-                showAlert('Digite um valor válido!', 'error');
+                showAlert('Por favor, digite um valor válido maior que zero!', 'error');
                 return;
             }
 
             showLoading(true);
 
             try {
-                if (type === 'native') {
-                    const tx = await contract.depositarNativo({
-                        value: ethers.utils.parseEther(amount)
-                    });
-                    await tx.wait();
-                    showAlert('Depósito de ARC realizado com sucesso!', 'success');
-                } else {
-                    const amountUSDC = Math.floor(parseFloat(amount) * 1000000);
-                    
-                    const allowance = await usdcContract.allowance(userAddress, CONFIG.contractAddress);
-                    if (allowance.lt(amountUSDC)) {
-                        showAlert('Aprovando USDC...', 'info');
-                        const approveTx = await usdcContract.approve(CONFIG.contractAddress, ethers.constants.MaxUint256);
-                        await approveTx.wait();
-                    }
-
-                    const tx = await contract.depositarToken(CONFIG.usdcAddress, amountUSDC, { value: 0});
-                    await tx.wait();
-                    showAlert('Depósito de USDC realizado com sucesso!', 'success');
+                const amountUSDC = Math.floor(parseFloat(amount) * 1000000);
+                
+                // Verificar allowance
+                const allowance = await usdcContract.allowance(userAddress, CONFIG.contractAddress);
+                if (allowance.lt(amountUSDC)) {
+                    showAlert('Aprovando USDC... Confirme a transação na MetaMask.', 'info');
+                    const approveTx = await usdcContract.approve(CONFIG.contractAddress, ethers.constants.MaxUint256);
+                    await approveTx.wait();
+                    showAlert('USDC aprovado! Agora depositando...', 'info');
                 }
+
+                // Depositar
+                const tx = await contract.depositarToken(CONFIG.usdcAddress, amountUSDC);
+                await tx.wait();
+                
+                showAlert(`Sucesso! ${amount} USDC depositado no contrato.`, 'success');
 
                 document.getElementById('depositAmount').value = '';
                 loadDashboard();
             } catch (error) {
                 console.error(error);
-                showAlert('Erro ao depositar: ' + error.message, 'error');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        async function withdrawNative() {
-            showLoading(true);
-            try {
-                const tx = await contract.sacarNativo();
-                await tx.wait();
-                showAlert('Saque de ARC realizado com sucesso!', 'success');
-                loadDashboard();
-            } catch (error) {
-                console.error(error);
-                showAlert('Erro ao sacar: ' + error.message, 'error');
+                if (error.code === 4001) {
+                    showAlert('Transação cancelada pelo usuário.', 'error');
+                } else {
+                    showAlert('Erro ao depositar: ' + error.message, 'error');
+                }
             } finally {
                 showLoading(false);
             }
@@ -631,29 +589,32 @@
         async function withdrawToken() {
             showLoading(true);
             try {
+                const balanceBefore = await contract.calcularSaldoDisponivelPara(CONFIG.usdcAddress, userAddress);
+                
+                if (balanceBefore.eq(0)) {
+                    showAlert('Você não tem saldo disponível para sacar.', 'error');
+                    showLoading(false);
+                    return;
+                }
+
                 const tx = await contract.sacarToken(CONFIG.usdcAddress);
                 await tx.wait();
-                showAlert('Saque de USDC realizado com sucesso!', 'success');
+                
+                const amountWithdrawn = (balanceBefore / 1000000).toFixed(2);
+                showAlert(`Sucesso! ${amountWithdrawn} USDC sacado para sua carteira.`, 'success');
+                
                 loadDashboard();
             } catch (error) {
                 console.error(error);
-                showAlert('Erro ao sacar: ' + error.message, 'error');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        async function withdrawAll() {
-            showLoading(true);
-            try {
-                const tokens = [ethers.constants.AddressZero, CONFIG.usdcAddress];
-                const tx = await contract.sacarMultiplosTokens(tokens);
-                await tx.wait();
-                showAlert('Saque de todos os tokens realizado com sucesso!', 'success');
-                loadDashboard();
-            } catch (error) {
-                console.error(error);
-                showAlert('Erro ao sacar: ' + error.message, 'error');
+                if (error.code === 4001) {
+                    showAlert('Transação cancelada pelo usuário.', 'error');
+                } else if (error.message.includes('Nao e beneficiario')) {
+                    showAlert('Apenas beneficiários cadastrados podem sacar.', 'error');
+                } else if (error.message.includes('Nenhum saldo disponivel')) {
+                    showAlert('Você não tem saldo disponível para sacar.', 'error');
+                } else {
+                    showAlert('Erro ao sacar: ' + error.message, 'error');
+                }
             } finally {
                 showLoading(false);
             }
@@ -661,9 +622,7 @@
 
         function enableButtons() {
             document.getElementById('depositBtn').disabled = false;
-            document.getElementById('withdrawArcBtn').disabled = false;
             document.getElementById('withdrawUsdcBtn').disabled = false;
-            document.getElementById('withdrawAllBtn').disabled = false;
         }
 
         function showAlert(message, type) {
@@ -676,15 +635,11 @@
             
             setTimeout(() => {
                 alert.classList.remove('show');
-            }, 5000);
+            }, 7000);
         }
 
         function showLoading(show) {
             document.getElementById('loading').classList.toggle('show', show);
-        }
-
-        function updateUI() {
-            // Atualiza UI quando necessário
         }
 
         window.ethereum?.on('accountsChanged', (accounts) => {
@@ -692,6 +647,7 @@
                 location.reload();
             } else {
                 userAddress = accounts[0];
+                document.getElementById('walletAddress').textContent = `Carteira: ${userAddress}`;
                 loadDashboard();
             }
         });
