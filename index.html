@@ -488,6 +488,7 @@
         </div>
     </div>
 
+    <!-- Modal de Detalhes -->
     <div id="detailsModal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
@@ -498,6 +499,7 @@
         </div>
     </div>
 
+    <!-- Loading Overlay -->
     <div id="loadingOverlay" class="loading-overlay">
         <div class="loading-content">
             <div class="spinner"></div>
@@ -514,10 +516,9 @@
             rpcUrl: 'https://rpc.testnet.arc.network',
             explorerUrl: 'https://testnet.arcscan.app',
             nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
-            // ⚠️ ATENÇÃO: Coloque AQUI o endereço do seu PaymentSplitterV2 recém-deployado!
-            // Usaremos esse endereço para testar depósito e saque.
-            factoryAddress: '0xd6f8CF5aDe562c02eFec4096CE03F8bF26E7ED40',
-            usdcAddress: '0x3910B7cbb3341f1F4bF4cEB66e4A2C8f204FE2b8' // USDC na ARC Testnet
+            // ⚠️ IMPORTANTE: Coloque o endereço da Factory aqui após o deploy!
+            factoryAddress: '0xD011d4DD74a793f4aAcF12c74972fdc601e045ff',
+            usdcAddress: '0x3910B7cbb3341f1F4bF4cEB66e4A2C8f204FE2b8'
         };
 
         const FACTORY_ABI = [
@@ -543,48 +544,11 @@
 
         const ERC20_ABI = [
             "function approve(address,uint256) returns (bool)",
-            "function allowance(address,address) view returns (uint256)",
-            "function decimals() view returns (uint8)" // Adicionando decimals para robustez (USDC é 6)
+            "function allowance(address,address) view returns (uint256)"
         ];
 
         let provider, signer, factory, usdcContract, userAddress;
         let currentSplitAddress = null;
-
-        // --- FUNÇÕES DE UTILIDADE ---
-
-        function showAlert(message, type) {
-            const container = document.getElementById('alertContainer');
-            const alert = document.createElement('div');
-            alert.className = `alert alert-${type} show`;
-            alert.textContent = message;
-            container.prepend(alert);
-            setTimeout(() => {
-                alert.remove();
-            }, 8000);
-        }
-
-        function showLoading(show) {
-            document.getElementById('loadingOverlay').classList[show ? 'add' : 'remove']('show');
-        }
-
-        function switchTab(tabName) {
-            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
-            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
-
-            document.getElementById(`${tabName}Tab`).classList.add('active');
-            document.querySelector(`.tab[data-tab="${tabName}"]`).classList.add('active');
-
-            // Recarrega as listas quando a aba é aberta
-            if (userAddress) {
-                if (tabName === 'my') loadMySplitters();
-                if (tabName === 'beneficiary') loadBeneficiarySplitters();
-            }
-        }
-
-        function closeModal() {
-            document.getElementById('detailsModal').classList.remove('show');
-            currentSplitAddress = null;
-        }
 
         // Configurar tabs
         document.querySelectorAll('.tab').forEach(tab => {
@@ -593,8 +557,6 @@
                 switchTab(tabName);
             });
         });
-
-        // --- FUNÇÕES DA WALLET E REDE ---
 
         async function connectWallet() {
             try {
@@ -622,9 +584,6 @@
                 if (network.chainId !== CONFIG.chainId) {
                     showAlert('⚠️ Trocando para ARC Testnet...', 'info');
                     await switchNetwork();
-                    // Após a troca, re-inicializa o provider/signer
-                    provider = new ethers.providers.Web3Provider(window.ethereum);
-                    signer = provider.getSigner();
                 }
 
                 // Verificar se o endereço da factory está configurado
@@ -650,20 +609,6 @@
                 await loadBeneficiarySplitters();
 
                 showLoading(false);
-
-                // Adicionar listener para troca de conta
-                window.ethereum.on('accountsChanged', (accounts) => {
-                    if (accounts.length > 0) {
-                        window.location.reload(); // Recarrega para usar a nova conta
-                    } else {
-                        // Desconexão
-                        window.location.reload();
-                    }
-                });
-                window.ethereum.on('chainChanged', (chainId) => {
-                    window.location.reload(); // Recarrega ao trocar de rede
-                });
-
             } catch (error) {
                 console.error('Erro ao conectar:', error);
                 showLoading(false);
@@ -671,7 +616,7 @@
                 if (error.code === 4001) {
                     showAlert('❌ Conexão rejeitada pelo usuário', 'error');
                 } else {
-                    showAlert('❌ Erro ao conectar: ' + (error.message || 'Verifique o console.'), 'error');
+                    showAlert('❌ Erro ao conectar: ' + error.message, 'error');
                 }
             }
         }
@@ -703,8 +648,6 @@
                 }
             }
         }
-
-        // --- FUNÇÕES DE CRIAÇÃO ---
 
         function addBeneficiary() {
             const list = document.getElementById('beneficiariesList');
@@ -764,19 +707,15 @@
 
             try {
                 showAlert('📝 Criando Payment Splitter... Confirme na MetaMask.', 'info');
-                // Não precisa de {value: 0} aqui se a Factory não aceita ARC, mas não custa garantir.
-                const tx = await factory.criarSplitter(beneficiaries); 
+                const tx = await factory.criarSplitter(beneficiaries);
                 
                 showAlert('⏳ Aguardando confirmação...', 'info');
                 const receipt = await tx.wait();
                 
                 showAlert('✅ Payment Splitter criado com sucesso!', 'success');
                 
-                // Limpar formulário (mantendo 2 campos vazios)
-                const list = document.getElementById('beneficiariesList');
-                list.innerHTML = '';
-                addBeneficiary();
-                addBeneficiary();
+                // Limpar formulário
+                document.querySelectorAll('.beneficiary-input').forEach(input => input.value = '');
                 
                 // Recarregar lista
                 await loadMySplitters();
@@ -786,14 +725,12 @@
                 if (error.code === 4001) {
                     showAlert('❌ Transação cancelada pelo usuário', 'error');
                 } else {
-                    showAlert('❌ Erro ao criar: ' + (error.data?.message || error.message), 'error');
+                    showAlert('❌ Erro ao criar: ' + error.message, 'error');
                 }
             } finally {
                 showLoading(false);
             }
         }
-
-        // --- FUNÇÕES DE LISTAGEM ---
 
         async function loadMySplitters() {
             if (!userAddress) return;
@@ -891,12 +828,12 @@
                     </div>
                     <div class="split-stat">
                         <div class="split-stat-label">💰 Saldo Total</div>
-                        <div class="split-stat-value">${ethers.utils.formatUnits(balance, 6)}</div>
+                        <div class="split-stat-value">${(balance / 1000000).toFixed(2)}</div>
                         <small style="font-size: 0.7em; color: #666;">USDC</small>
                     </div>
                     <div class="split-stat">
                         <div class="split-stat-label">💵 Seu Saldo</div>
-                        <div class="split-stat-value">${ethers.utils.formatUnits(myBalance, 6)}</div>
+                        <div class="split-stat-value">${(myBalance / 1000000).toFixed(2)}</div>
                         <small style="font-size: 0.7em; color: #666;">USDC</small>
                     </div>
                 </div>
@@ -905,11 +842,9 @@
             return card;
         }
 
-        // --- FUNÇÕES DE DETALHES E TRANSAÇÃO ---
-
         async function openModal(address) {
             currentSplitAddress = address;
-            const splitter = new ethers.Contract(address, SPLITTER_ABI, provider); // Usar Provider para consultas rápidas
+            const splitter = new ethers.Contract(address, SPLITTER_ABI, signer);
             
             showLoading(true);
 
@@ -926,166 +861,229 @@
                     myBalance = await splitter.calcularSaldoDisponivelPara(CONFIG.usdcAddress, userAddress);
                 }
 
-                // Usar formatUnits para formatar corretamente (USDC tem 6 decimais)
-                const formattedBalance = ethers.utils.formatUnits(balance, 6);
-                const formattedMyBalance = ethers.utils.formatUnits(myBalance, 6);
-
                 const content = document.getElementById('modalContent');
                 content.innerHTML = `
                     <div style="margin-bottom: 25px;">
                         <strong>📍 Endereço do Contrato:</strong><br>
-                        <span class="split-address">${address}</span>
-                        <br><br>
-                        <strong>Criador:</strong> <span class="split-address">${creator}</span>
-                        <br>
-                        <strong>Criado em:</strong> ${date}
+                        <span style="font-family: monospace; color: #667eea; word-break: break-all; font-size: 0.9em;">${address}</span><br>
+                        <a href="${CONFIG.explorerUrl}/address/${address}" target="_blank" style="color: #667eea; font-size: 0.9em;">Ver no Explorer →</a>
                     </div>
 
-                    <h3 style="margin-bottom: 15px;">Detalhes Financeiros</h3>
-                    <div class="split-info" style="margin-bottom: 30px; padding: 15px; background: #eef; border-radius: 10px;">
-                        <div class="split-stat">
-                            <div class="split-stat-label">💰 Saldo Total</div>
-                            <div class="split-stat-value">${formattedBalance}</div>
-                            <small style="font-size: 0.7em; color: #666;">USDC</small>
+                    <div style="margin-bottom: 25px;">
+                        <strong>👤 Criado por:</strong><br>
+                        <span style="font-family: monospace; font-size: 0.9em;">${creator}</span><br>
+                        <small style="color: #666;">${date}</small>
+                    </div>
+
+                    <div style="margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 10px;">
+                        <div style="margin-bottom: 10px;">
+                            <strong>💰 Saldo Total no Contrato:</strong> 
+                            <span style="font-size: 1.3em; color: #11998e; font-weight: 700;">${(balance / 1000000).toFixed(2)} USDC</span>
                         </div>
-                        <div class="split-stat">
-                            <div class="split-stat-label">💵 Seu Saldo Disponível</div>
-                            <div class="split-stat-value">${formattedMyBalance}</div>
-                            <small style="font-size: 0.7em; color: #666;">USDC</small>
+                        <div>
+                            <strong>💵 Seu Saldo Disponível:</strong> 
+                            <span style="font-size: 1.3em; color: #667eea; font-weight: 700;">${(myBalance / 1000000).toFixed(2)} USDC</span>
                         </div>
                     </div>
+
+                    <div style="margin-bottom: 25px;">
+                        <strong>👥 Beneficiários (${beneficiaries.length}):</strong><br>
+                        ${beneficiaries.map((b, i) => `
+                            <div style="padding: 12px; margin: 8px 0; background: #f8f9fa; border-radius: 8px; font-family: monospace; word-break: break-all; font-size: 0.85em;">
+                                <strong>${i+1}.</strong> ${b}
+                                ${b.toLowerCase() === userAddress.toLowerCase() ? '<strong style="color: #667eea;"> ← VOCÊ</strong>' : ''}
+                            </div>
+                        `).join('')}
+                    </div>
+
+                    <hr style="margin: 25px 0; border: 1px solid #e0e0e0;">
+
+                    <h3 style="margin-bottom: 20px; color: #333;">💰 Ações</h3>
                     
-                    <div style="margin-bottom: 30px;">
-                        <button class="btn btn-success" ${myBalance.gt(0) ? '' : 'disabled'} onclick="withdrawToken('${address}')" style="width: 100%; padding: 15px; font-size: 1.1em;">
-                            💸 Sacar Saldo Disponível (USDC)
+                    <div style="margin-bottom: 20px;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">💵 Depositar USDC</label>
+                        <small style="color: #666; display: block; margin-bottom: 10px;">Qualquer pessoa pode depositar no split</small>
+                        <input type="number" id="depositAmount" class="form-input" placeholder="0.00" step="0.01" min="0" style="margin-bottom: 10px;">
+                        <button class="btn btn-success" onclick="depositToSplit()" style="width: 100%;">
+                            💵 Depositar USDC
                         </button>
                     </div>
 
-                    <hr style="margin-bottom: 30px;">
-                    
-                    <h3 style="margin-bottom: 15px;">Depositar Fundos (USDC)</h3>
-                    <div class="form-group">
-                        <label class="form-label">Valor (USDC)</label>
-                        <input type="number" id="depositAmount" class="form-input" placeholder="0.00" min="0" step="0.01">
-                    </div>
-                    <button class="btn btn-primary" id="depositBtn" onclick="depositToken('${address}')" style="width: 100%; padding: 15px; font-size: 1.1em;">
-                        📥 Depositar USDC
-                    </button>
-
-                    <hr style="margin: 30px 0;">
-
-                    <h3 style="margin-bottom: 15px;">👥 Lista de Beneficiários (${beneficiaries.length})</h3>
-                    <div style="max-height: 150px; overflow-y: auto; padding: 10px; border: 1px solid #e0e0e0; border-radius: 10px;">
-                        ${beneficiaries.map(addr => `<div class="split-address" style="margin-bottom: 5px;">${addr}</div>`).join('')}
-                    </div>
+                    ${isBenef ? `
+                        <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid #e0e0e0;">
+                            <button class="btn btn-primary" onclick="withdrawFromSplit()" style="width: 100%; padding: 15px; font-size: 1.1em;">
+                                💰 Sacar Meu Saldo (${(myBalance / 1000000).toFixed(2)} USDC)
+                            </button>
+                        </div>
+                    ` : `
+                        <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 10px; text-align: center; color: #856404;">
+                            ℹ️ Você não é beneficiário neste split<br>
+                            <small>Apenas beneficiários podem sacar fundos</small>
+                        </div>
+                    `}
                 `;
-                
+
                 document.getElementById('detailsModal').classList.add('show');
                 showLoading(false);
             } catch (error) {
-                console.error('Erro ao carregar detalhes do split:', error);
-                showAlert('❌ Erro ao carregar detalhes: ' + error.message, 'error');
+                console.error('Erro ao carregar detalhes:', error);
+                showAlert('❌ Erro ao carregar detalhes do split', 'error');
                 showLoading(false);
             }
         }
 
-        async function depositToken(address) {
-            if (!userAddress) {
-                showAlert('❌ Conecte sua carteira primeiro!', 'error');
-                return;
-            }
+        function closeModal() {
+            document.getElementById('detailsModal').classList.remove('show');
+            currentSplitAddress = null;
+        }
 
-            const amountInput = document.getElementById('depositAmount');
-            const amount = amountInput.value.trim();
-
+        async function depositToSplit() {
+            const amount = document.getElementById('depositAmount').value;
             if (!amount || parseFloat(amount) <= 0) {
-                showAlert('❌ Digite um valor válido para depósito.', 'error');
+                showAlert('❌ Digite um valor válido maior que zero!', 'error');
                 return;
             }
 
             showLoading(true);
 
             try {
-                // parseUnits(amount, 6) usa 6 decimais, que é o padrão do USDC
-                const amountUSDC = ethers.utils.parseUnits(amount, 6); 
-
-                // 1. Verificar Allowance (Aprovação)
-                showAlert('⏳ Verificando permissão (Allowance) para USDC...', 'info');
-                // Inicializa o contrato do Splitter usando o Signer (para transação)
-                const splitterContract = new ethers.Contract(address, SPLITTER_ABI, signer); 
+                const splitter = new ethers.Contract(currentSplitAddress, SPLITTER_ABI, signer);
+                const amountUSDC = Math.floor(parseFloat(amount) * 1000000);
                 
-                const allowance = await usdcContract.allowance(userAddress, address);
-                
-                // Se a permissão for menor que o valor a depositar, solicita aprovação
+                // Verificar e aprovar se necessário
+                const allowance = await usdcContract.allowance(userAddress, currentSplitAddress);
                 if (allowance.lt(amountUSDC)) {
-                    showAlert('📝 Aprovando USDC... Confirme a transação de Aprovação na MetaMask.', 'info');
-                    
-                    // Aprova um valor máximo (MaxUint256) no endereço do Splitter (address)
-                    const approveTx = await usdcContract.approve(
-                        address, 
-                        ethers.constants.MaxUint256, 
-                        { value: 0 } // CORREÇÃO DE GÁS: Garante que não envia ARC na transação de token
-                    ); 
+                    showAlert('📝 Aprovando USDC... Confirme na MetaMask', 'info');
+                    const approveTx = await usdcContract.approve(currentSplitAddress, ethers.constants.MaxUint256);
                     await approveTx.wait();
-                    showAlert('✅ Aprovação de USDC bem-sucedida.', 'success');
+                    showAlert('✅ USDC aprovado! Agora depositando...', 'info');
                 }
 
-                // 2. Realizar Depósito (Chama a função no Splitter)
-                showAlert('📝 Realizando Depósito... Confirme a transação de Depósito na MetaMask.', 'info');
-                
-                const tx = await splitterContract.depositarToken(
-                    CONFIG.usdcAddress, // Endereço do Token (USDC)
-                    amountUSDC,
-                    { value: 0 } // CORREÇÃO DE GÁS: Garante que não envia ARC na transação de token
-                );
-                
+                showAlert('📝 Depositando... Confirme na MetaMask', 'info');
+                const tx = await splitter.depositarToken(CONFIG.usdcAddress, amountUSDC);
                 await tx.wait();
-                showAlert(`✅ Depósito de ${amount} USDC realizado com sucesso!`, 'success');
                 
-                // Recarregar dados após o depósito
-                await openModal(address); 
+                showAlert(`✅ ${amount} USDC depositado com sucesso!`, 'success');
+                
+                // Recarregar
+                closeModal();
                 await loadMySplitters();
                 await loadBeneficiarySplitters();
-
             } catch (error) {
                 console.error('Erro ao depositar:', error);
-                showAlert('❌ Erro ao depositar: ' + (error.data?.message || error.message), 'error');
+                if (error.code === 4001) {
+                    showAlert('❌ Transação cancelada pelo usuário', 'error');
+                } else {
+                    showAlert('❌ Erro ao depositar: ' + error.message, 'error');
+                }
             } finally {
                 showLoading(false);
             }
         }
 
-        async function withdrawToken(address) {
-            if (!userAddress) {
-                showAlert('❌ Conecte sua carteira primeiro!', 'error');
-                return;
-            }
-
+        async function withdrawFromSplit() {
             showLoading(true);
 
             try {
-                showAlert('📝 Solicitando Saque... Confirme a transação na MetaMask.', 'info');
-                const splitterContract = new ethers.Contract(address, SPLITTER_ABI, signer);
+                const splitter = new ethers.Contract(currentSplitAddress, SPLITTER_ABI, signer);
                 
-                // sacartoken (tokenAddress)
-                const tx = await splitterContract.sacarToken(CONFIG.usdcAddress);
-                
+                // Verificar saldo disponível
+                const available = await splitter.calcularSaldoDisponivelPara(CONFIG.usdcAddress, userAddress);
+                if (available.eq(0)) {
+                    showAlert('❌ Você não tem saldo disponível para sacar', 'error');
+                    showLoading(false);
+                    return;
+                }
+
+                showAlert('📝 Sacando... Confirme na MetaMask', 'info');
+                const tx = await splitter.sacarToken(CONFIG.usdcAddress);
                 await tx.wait();
-                showAlert('✅ Saque de USDC realizado com sucesso!', 'success');
                 
-                // Recarregar dados após o saque
-                await openModal(address); 
+                const amountWithdrawn = (available / 1000000).toFixed(2);
+                showAlert(`✅ ${amountWithdrawn} USDC sacado com sucesso!`, 'success');
+                
+                // Recarregar
+                closeModal();
                 await loadMySplitters();
                 await loadBeneficiarySplitters();
-
             } catch (error) {
                 console.error('Erro ao sacar:', error);
-                showAlert('❌ Erro ao sacar: ' + (error.data?.message || error.message), 'error');
+                if (error.code === 4001) {
+                    showAlert('❌ Transação cancelada pelo usuário', 'error');
+                } else {
+                    showAlert('❌ Erro ao sacar: ' + error.message, 'error');
+                }
             } finally {
                 showLoading(false);
             }
         }
 
+        function switchTab(tabName) {
+            // Remover active de todas as tabs
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+            
+            // Ativar tab clicada
+            document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+            document.getElementById(`${tabName}Tab`).classList.add('active');
+            
+            // Carregar dados se necessário
+            if (userAddress) {
+                if (tabName === 'my') {
+                    loadMySplitters();
+                } else if (tabName === 'beneficiary') {
+                    loadBeneficiarySplitters();
+                }
+            }
+        }
+
+        function showAlert(message, type) {
+            const container = document.getElementById('alertContainer');
+            const alert = document.createElement('div');
+            alert.className = `alert alert-${type} show`;
+            alert.textContent = message;
+            container.innerHTML = '';
+            container.appendChild(alert);
+            
+            setTimeout(() => {
+                alert.classList.remove('show');
+                setTimeout(() => alert.remove(), 300);
+            }, 7000);
+        }
+
+        function showLoading(show) {
+            const overlay = document.getElementById('loadingOverlay');
+            if (show) {
+                overlay.classList.add('show');
+            } else {
+                overlay.classList.remove('show');
+            }
+        }
+
+        // Event listeners para mudanças na MetaMask
+        if (window.ethereum) {
+            window.ethereum.on('accountsChanged', (accounts) => {
+                if (accounts.length === 0) {
+                    showAlert('❌ MetaMask desconectada', 'error');
+                    setTimeout(() => location.reload(), 1500);
+                } else {
+                    showAlert('🔄 Conta alterada, recarregando...', 'info');
+                    setTimeout(() => location.reload(), 1500);
+                }
+            });
+
+            window.ethereum.on('chainChanged', () => {
+                showAlert('🔄 Rede alterada, recarregando...', 'info');
+                setTimeout(() => location.reload(), 1500);
+            });
+        }
+
+        // Fechar modal ao clicar fora
+        document.getElementById('detailsModal').addEventListener('click', function(e) {
+            if (e.target === this) {
+                closeModal();
+            }
+        });
     </script>
 </body>
 </html>
