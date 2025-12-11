@@ -93,7 +93,7 @@
             border-bottom: 3px solid #667eea;
         }
 
-        .tab:hover {
+        .tab:hover:not(.active) {
             background: #e9ecef;
         }
 
@@ -124,7 +124,7 @@
             color: white;
         }
 
-        .btn-primary:hover {
+        .btn-primary:hover:not(:disabled) {
             transform: translateY(-2px);
             box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
         }
@@ -134,7 +134,7 @@
             color: white;
         }
 
-        .btn-success:hover {
+        .btn-success:hover:not(:disabled) {
             background: #45a049;
         }
 
@@ -206,6 +206,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 15px;
+            flex-wrap: wrap;
+            gap: 10px;
         }
 
         .split-address {
@@ -213,6 +215,7 @@
             color: #667eea;
             font-weight: 600;
             font-size: 0.9em;
+            word-break: break-all;
         }
 
         .split-info {
@@ -266,16 +269,6 @@
             border: 1px solid #bee5eb;
         }
 
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 40px;
-        }
-
-        .loading.show {
-            display: block;
-        }
-
         .spinner {
             border: 4px solid #f3f3f3;
             border-top: 4px solid #667eea;
@@ -313,6 +306,7 @@
             z-index: 1000;
             align-items: center;
             justify-content: center;
+            padding: 20px;
         }
 
         .modal.show {
@@ -324,8 +318,8 @@
             padding: 30px;
             border-radius: 20px;
             max-width: 600px;
-            width: 90%;
-            max-height: 80vh;
+            width: 100%;
+            max-height: 85vh;
             overflow-y: auto;
         }
 
@@ -340,6 +334,11 @@
             font-size: 2em;
             cursor: pointer;
             color: #999;
+            line-height: 1;
+        }
+
+        .modal-close:hover {
+            color: #333;
         }
 
         .badge {
@@ -348,6 +347,7 @@
             border-radius: 20px;
             font-size: 0.85em;
             font-weight: 600;
+            margin-left: 10px;
         }
 
         .badge-success {
@@ -360,6 +360,28 @@
             color: #0c5460;
         }
 
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+        }
+
+        .loading-overlay.show {
+            display: flex;
+        }
+
+        .loading-content {
+            text-align: center;
+            color: white;
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 1.8em;
@@ -367,6 +389,10 @@
 
             .tabs {
                 flex-direction: column;
+            }
+
+            .tab {
+                padding: 15px;
             }
 
             .split-info {
@@ -379,7 +405,7 @@
     <div class="container">
         <div class="header">
             <h1>💰 Payment Splitter Factory</h1>
-            <p>Crie e gerencie múltiplos splits de pagamento</p>
+            <p>Crie e gerencie múltiplos splits de pagamento em USDC</p>
         </div>
 
         <div class="wallet-section">
@@ -395,13 +421,13 @@
         <div id="alertContainer"></div>
 
         <div class="tabs">
-            <button class="tab active" onclick="switchTab('create')">
+            <button class="tab active" data-tab="create">
                 ➕ Criar Novo Split
             </button>
-            <button class="tab" onclick="switchTab('my')">
+            <button class="tab" data-tab="my">
                 📋 Meus Splits
             </button>
-            <button class="tab" onclick="switchTab('beneficiary')">
+            <button class="tab" data-tab="beneficiary">
                 💼 Como Beneficiário
             </button>
         </div>
@@ -432,14 +458,20 @@
             <button class="btn btn-primary" id="createBtn" onclick="createSplitter()" disabled style="width: 100%; padding: 15px; font-size: 1.2em;">
                 🚀 Criar Payment Splitter
             </button>
+
+            <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-radius: 10px; border-left: 4px solid #ffc107;">
+                <strong>⚠️ Atenção:</strong> Você precisa fazer o deploy do contrato Factory primeiro no Remix IDE. 
+                Depois, atualize o endereço da Factory no código JavaScript.
+            </div>
         </div>
 
         <div id="myTab" class="tab-content">
             <h2 style="margin-bottom: 25px;">📋 Payment Splitters Criados por Você</h2>
             <div id="mySplittersList">
-                <div class="loading show">
-                    <div class="spinner"></div>
-                    <p>Carregando seus splits...</p>
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔌</div>
+                    <h3>Conecte sua carteira</h3>
+                    <p>Clique em "Conectar MetaMask" para ver seus splits</p>
                 </div>
             </div>
         </div>
@@ -447,9 +479,10 @@
         <div id="beneficiaryTab" class="tab-content">
             <h2 style="margin-bottom: 25px;">💼 Splits Onde Você é Beneficiário</h2>
             <div id="beneficiarySplittersList">
-                <div class="loading show">
-                    <div class="spinner"></div>
-                    <p>Carregando seus splits...</p>
+                <div class="empty-state">
+                    <div class="empty-state-icon">🔌</div>
+                    <h3>Conecte sua carteira</h3>
+                    <p>Clique em "Conectar MetaMask" para ver seus splits</p>
                 </div>
             </div>
         </div>
@@ -466,6 +499,15 @@
         </div>
     </div>
 
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="loading-overlay">
+        <div class="loading-content">
+            <div class="spinner"></div>
+            <p style="margin-top: 20px; font-size: 1.2em;">Processando transação...</p>
+            <p style="margin-top: 10px; font-size: 0.9em;">Confirme na MetaMask</p>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/ethers@5.7.2/dist/ethers.umd.min.js"></script>
     <script>
         const CONFIG = {
@@ -474,7 +516,7 @@
             rpcUrl: 'https://rpc.testnet.arc.network',
             explorerUrl: 'https://testnet.arcscan.app',
             nativeCurrency: { name: 'ARC', symbol: 'ARC', decimals: 18 },
-            // VOCÊ VAI COLOCAR O ENDEREÇO DA FACTORY AQUI DEPOIS DO DEPLOY
+            // ⚠️ IMPORTANTE: Coloque o endereço da Factory aqui após o deploy!
             factoryAddress: '0xSEU_ENDERECO_FACTORY_AQUI',
             usdcAddress: '0x3910B7cbb3341f1F4bF4cEB66e4A2C8f204FE2b8'
         };
@@ -508,22 +550,47 @@
         let provider, signer, factory, usdcContract, userAddress;
         let currentSplitAddress = null;
 
+        // Configurar tabs
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                const tabName = this.getAttribute('data-tab');
+                switchTab(tabName);
+            });
+        });
+
         async function connectWallet() {
             try {
                 if (typeof window.ethereum === 'undefined') {
-                    showAlert('MetaMask não encontrada!', 'error');
+                    showAlert('❌ MetaMask não encontrada! Por favor, instale a extensão MetaMask.', 'error');
+                    window.open('https://metamask.io/download/', '_blank');
                     return;
                 }
 
-                const accounts = await window.ethereum.request({ method: 'eth_requestAccounts' });
+                showLoading(true);
+
+                // Solicitar contas (MetaMask abrirá automaticamente)
+                const accounts = await window.ethereum.request({ 
+                    method: 'eth_requestAccounts' 
+                });
+                
                 userAddress = accounts[0];
 
                 provider = new ethers.providers.Web3Provider(window.ethereum);
                 signer = provider.getSigner();
 
                 const network = await provider.getNetwork();
+                console.log('Rede atual:', network.chainId);
+
                 if (network.chainId !== CONFIG.chainId) {
+                    showAlert('⚠️ Trocando para ARC Testnet...', 'info');
                     await switchNetwork();
+                }
+
+                // Verificar se o endereço da factory está configurado
+                if (CONFIG.factoryAddress === '0xSEU_ENDERECO_FACTORY_AQUI') {
+                    showAlert('⚠️ Endereço da Factory não configurado! Atualize o código com o endereço do contrato.', 'error');
+                    showLoading(false);
+                    return;
                 }
 
                 factory = new ethers.Contract(CONFIG.factoryAddress, FACTORY_ABI, signer);
@@ -535,12 +602,22 @@
                 document.getElementById('connectBtn').disabled = true;
                 document.getElementById('createBtn').disabled = false;
 
-                showAlert('Carteira conectada com sucesso!', 'success');
-                loadMySplitters();
-                loadBeneficiarySplitters();
+                showAlert('✅ Carteira conectada com sucesso!', 'success');
+                
+                // Carregar dados
+                await loadMySplitters();
+                await loadBeneficiarySplitters();
+
+                showLoading(false);
             } catch (error) {
-                console.error(error);
-                showAlert('Erro ao conectar: ' + error.message, 'error');
+                console.error('Erro ao conectar:', error);
+                showLoading(false);
+                
+                if (error.code === 4001) {
+                    showAlert('❌ Conexão rejeitada pelo usuário', 'error');
+                } else {
+                    showAlert('❌ Erro ao conectar: ' + error.message, 'error');
+                }
             }
         }
 
@@ -552,16 +629,22 @@
                 });
             } catch (error) {
                 if (error.code === 4902) {
-                    await window.ethereum.request({
-                        method: 'wallet_addEthereumChain',
-                        params: [{
-                            chainId: '0x' + CONFIG.chainId.toString(16),
-                            chainName: CONFIG.chainName,
-                            nativeCurrency: CONFIG.nativeCurrency,
-                            rpcUrls: [CONFIG.rpcUrl],
-                            blockExplorerUrls: [CONFIG.explorerUrl]
-                        }]
-                    });
+                    try {
+                        await window.ethereum.request({
+                            method: 'wallet_addEthereumChain',
+                            params: [{
+                                chainId: '0x' + CONFIG.chainId.toString(16),
+                                chainName: CONFIG.chainName,
+                                nativeCurrency: CONFIG.nativeCurrency,
+                                rpcUrls: [CONFIG.rpcUrl],
+                                blockExplorerUrls: [CONFIG.explorerUrl]
+                            }]
+                        });
+                    } catch (addError) {
+                        throw new Error('Erro ao adicionar rede ARC');
+                    }
+                } else {
+                    throw error;
                 }
             }
         }
@@ -580,60 +663,80 @@
         function removeBeneficiary(button) {
             const items = document.querySelectorAll('.beneficiary-item');
             if (items.length <= 2) {
-                showAlert('Mínimo de 2 beneficiários!', 'error');
+                showAlert('❌ Mínimo de 2 beneficiários!', 'error');
                 return;
             }
             button.parentElement.remove();
         }
 
         async function createSplitter() {
+            if (!userAddress) {
+                showAlert('❌ Conecte sua carteira primeiro!', 'error');
+                return;
+            }
+
             const inputs = document.querySelectorAll('.beneficiary-input');
             const beneficiaries = [];
 
             for (let input of inputs) {
                 const address = input.value.trim();
                 if (!address) {
-                    showAlert('Preencha todos os endereços!', 'error');
+                    showAlert('❌ Preencha todos os endereços!', 'error');
                     return;
                 }
                 if (!ethers.utils.isAddress(address)) {
-                    showAlert('Endereço inválido: ' + address, 'error');
+                    showAlert('❌ Endereço inválido: ' + address, 'error');
                     return;
                 }
+                
+                // Verificar duplicados
+                if (beneficiaries.includes(address.toLowerCase())) {
+                    showAlert('❌ Endereço duplicado: ' + address, 'error');
+                    return;
+                }
+                
                 beneficiaries.push(address);
             }
 
             if (beneficiaries.length < 2) {
-                showAlert('Mínimo de 2 beneficiários!', 'error');
+                showAlert('❌ Mínimo de 2 beneficiários!', 'error');
                 return;
             }
 
             showLoading(true);
 
             try {
-                showAlert('Criando Payment Splitter... Confirme na MetaMask.', 'info');
+                showAlert('📝 Criando Payment Splitter... Confirme na MetaMask.', 'info');
                 const tx = await factory.criarSplitter(beneficiaries);
-                await tx.wait();
-
+                
+                showAlert('⏳ Aguardando confirmação...', 'info');
+                const receipt = await tx.wait();
+                
                 showAlert('✅ Payment Splitter criado com sucesso!', 'success');
                 
                 // Limpar formulário
                 document.querySelectorAll('.beneficiary-input').forEach(input => input.value = '');
                 
                 // Recarregar lista
-                loadMySplitters();
+                await loadMySplitters();
                 switchTab('my');
             } catch (error) {
-                console.error(error);
-                showAlert('Erro ao criar: ' + error.message, 'error');
+                console.error('Erro ao criar:', error);
+                if (error.code === 4001) {
+                    showAlert('❌ Transação cancelada pelo usuário', 'error');
+                } else {
+                    showAlert('❌ Erro ao criar: ' + error.message, 'error');
+                }
             } finally {
                 showLoading(false);
             }
         }
 
         async function loadMySplitters() {
+            if (!userAddress) return;
+
             const container = document.getElementById('mySplittersList');
-            container.innerHTML = '<div class="loading show"><div class="spinner"></div><p>Carregando...</p></div>';
+            container.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="spinner"></div><p style="margin-top: 15px;">Carregando seus splits...</p></div>';
 
             try {
                 const addresses = await factory.obterMeusSplitters(userAddress);
@@ -655,14 +758,16 @@
                     container.appendChild(card);
                 }
             } catch (error) {
-                console.error(error);
-                container.innerHTML = '<p style="color: red;">Erro ao carregar splits</p>';
+                console.error('Erro ao carregar splits:', error);
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><h3>Erro ao carregar splits</h3><p>' + error.message + '</p></div>';
             }
         }
 
         async function loadBeneficiarySplitters() {
+            if (!userAddress) return;
+
             const container = document.getElementById('beneficiarySplittersList');
-            container.innerHTML = '<div class="loading show"><div class="spinner"></div><p>Carregando...</p></div>';
+            container.innerHTML = '<div style="text-align: center; padding: 40px;"><div class="spinner"></div><p style="margin-top: 15px;">Carregando splits...</p></div>';
 
             try {
                 const addresses = await factory.obterSplittersComoBeneficiario(userAddress);
@@ -684,8 +789,8 @@
                     container.appendChild(card);
                 }
             } catch (error) {
-                console.error(error);
-                container.innerHTML = '<p style="color: red;">Erro ao carregar splits</p>';
+                console.error('Erro ao carregar splits:', error);
+                container.innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><h3>Erro ao carregar splits</h3><p>' + error.message + '</p></div>';
             }
         }
 
@@ -710,24 +815,26 @@
 
             card.innerHTML = `
                 <div class="split-card-header">
+                    <div class="split-address">${address}</div>
                     <div>
-                        <div class="split-address">${address}</div>
                         ${isCreator ? '<span class="badge badge-info">Criado por você</span>' : ''}
-                        ${isBenef ? '<span class="badge badge-success">Você é beneficiário</span>' : ''}
+                        ${isBenef ? '<span class="badge badge-success">Beneficiário</span>' : ''}
                     </div>
                 </div>
                 <div class="split-info">
                     <div class="split-stat">
-                        <div class="split-stat-label">Beneficiários</div>
+                        <div class="split-stat-label">👥 Beneficiários</div>
                         <div class="split-stat-value">${numBenef}</div>
                     </div>
                     <div class="split-stat">
-                        <div class="split-stat-label">Saldo Total</div>
-                        <div class="split-stat-value">${(balance / 1000000).toFixed(2)} USDC</div>
+                        <div class="split-stat-label">💰 Saldo Total</div>
+                        <div class="split-stat-value">${(balance / 1000000).toFixed(2)}</div>
+                        <small style="font-size: 0.7em; color: #666;">USDC</small>
                     </div>
                     <div class="split-stat">
-                        <div class="split-stat-label">Seu Saldo</div>
-                        <div class="split-stat-value">${(myBalance / 1000000).toFixed(2)} USDC</div>
+                        <div class="split-stat-label">💵 Seu Saldo</div>
+                        <div class="split-stat-value">${(myBalance / 1000000).toFixed(2)}</div>
+                        <small style="font-size: 0.7em; color: #666;">USDC</small>
                     </div>
                 </div>
             `;
@@ -739,120 +846,22 @@
             currentSplitAddress = address;
             const splitter = new ethers.Contract(address, SPLITTER_ABI, signer);
             
-            const beneficiaries = await splitter.listarBeneficiarios();
-            const balance = await splitter.saldoContratoToken(CONFIG.usdcAddress);
-            const isBenef = await splitter.ehBeneficiario(userAddress);
-            const creator = await splitter.criador();
-            const timestamp = await splitter.dataCriacao();
-            const date = new Date(timestamp * 1000).toLocaleString('pt-BR');
-
-            let myBalance = 0;
-            if (isBenef) {
-                myBalance = await splitter.calcularSaldoDisponivelPara(CONFIG.usdcAddress, userAddress);
-            }
-
-            const content = document.getElementById('modalContent');
-            content.innerHTML = `
-                <div style="margin-bottom: 25px;">
-                    <strong>Endereço do Contrato:</strong><br>
-                    <span style="font-family: monospace; color: #667eea; word-break: break-all;">${address}</span><br>
-                    <a href="${CONFIG.explorerUrl}/address/${address}" target="_blank" style="color: #667eea;">Ver no Explorer →</a>
-                </div>
-
-                <div style="margin-bottom: 25px;">
-                    <strong>Criado por:</strong><br>
-                    <span style="font-family: monospace;">${creator}</span><br>
-                    <small>${date}</small>
-                </div>
-
-                <div style="margin-bottom: 25px;">
-                    <strong>Saldo Total:</strong> ${(balance / 1000000).toFixed(2)} USDC<br>
-                    <strong>Seu Saldo Disponível:</strong> ${(myBalance / 1000000).toFixed(2)} USDC
-                </div>
-
-                <div style="margin-bottom: 25px;">
-                    <strong>Beneficiários (${beneficiaries.length}):</strong><br>
-                    ${beneficiaries.map((b, i) => `
-                        <div style="padding: 10px; margin: 5px 0; background: #f8f9fa; border-radius: 8px; font-family: monospace; word-break: break-all;">
-                            ${i+1}. ${b}
-                            ${b.toLowerCase() === userAddress.toLowerCase() ? '<strong style="color: #667eea;"> ← VOCÊ</strong>' : ''}
-                        </div>
-                    `).join('')}
-                </div>
-
-                ${isBenef ? `
-                    <hr style="margin: 25px 0;">
-                    <h3 style="margin-bottom: 15px;">💰 Ações</h3>
-                    
-                    <div style="margin-bottom: 15px;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: 600;">Depositar USDC</label>
-                        <input type="number" id="depositAmount" class="form-input" placeholder="0.00" step="0.01" min="0">
-                    </div>
-                    <button class="btn btn-success" onclick="depositToSplit()" style="width: 100%; margin-bottom: 15px;">
-                        💵 Depositar
-                    </button>
-
-                    <button class="btn btn-primary" onclick="withdrawFromSplit()" style="width: 100%;">
-                        💰 Sacar Meu Saldo
-                    </button>
-                ` : '<p style="color: #999; text-align: center;">Você não é beneficiário neste split</p>'}
-            `;
-
-            document.getElementById('detailsModal').classList.add('show');
-        }
-
-        function closeModal() {
-            document.getElementById('detailsModal').classList.remove('show');
-            currentSplitAddress = null;
-        }
-
-        async function depositToSplit() {
-            const amount = document.getElementById('depositAmount').value;
-            if (!amount || parseFloat(amount) <= 0) {
-                showAlert('Digite um valor válido!', 'error');
-                return;
-            }
-
             showLoading(true);
 
             try {
-                const splitter = new ethers.Contract(currentSplitAddress, SPLITTER_ABI, signer);
-                const amountUSDC = Math.floor(parseFloat(amount) * 1000000);
-                
-                const allowance = await usdcContract.allowance(userAddress, currentSplitAddress);
-                if (allowance.lt(amountUSDC)) {
-                    showAlert('Aprovando USDC...', 'info');
-                    const approveTx = await usdcContract.approve(currentSplitAddress, ethers.constants.MaxUint256);
-                    await approveTx.wait();
+                const beneficiaries = await splitter.listarBeneficiarios();
+                const balance = await splitter.saldoContratoToken(CONFIG.usdcAddress);
+                const isBenef = await splitter.ehBeneficiario(userAddress);
+                const creator = await splitter.criador();
+                const timestamp = await splitter.dataCriacao();
+                const date = new Date(timestamp * 1000).toLocaleString('pt-BR');
+
+                let myBalance = 0;
+                if (isBenef) {
+                    myBalance = await splitter.calcularSaldoDisponivelPara(CONFIG.usdcAddress, userAddress);
                 }
 
-                const tx = await splitter.depositarToken(CONFIG.usdcAddress, amountUSDC);
-                await tx.wait();
-                
-                showAlert(`✅ ${amount} USDC depositado!`, 'success');
-                closeModal();
-                loadMySplitters();
-                loadBeneficiarySplitters();
-            } catch (error) {
-                console.error(error);
-                showAlert('Erro ao depositar: ' + error.message, 'error');
-            } finally {
-                showLoading(false);
-            }
-        }
-
-        async function withdrawFromSplit() {
-            showLoading(true);
-
-            try {
-                const splitter = new ethers.Contract(currentSplitAddress, SPLITTER_ABI, signer);
-                const tx = await splitter.sacarToken(CONFIG.usdcAddress);
-                await tx.wait();
-                
-                showAlert('✅ USDC sacado com sucesso!', 'success');
-                closeModal();
-                loadMySplitters();
-                loadBeneficiarySplitters();
-            } catch (error) {
-                console.error(error);
-                showAlert('Erro ao sacar: '
+                const content = document.getElementById('modalContent');
+                content.innerHTML = `
+                    <div style="margin-bottom: 25px;">
+                        <strong>📍 Endereço do Contrato:</strong><br
